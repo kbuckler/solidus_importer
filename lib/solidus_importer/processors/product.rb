@@ -13,7 +13,6 @@ module SolidusImporter
         @options ||= {
           available_on: Date.current.yesterday,
           not_available: nil,
-          price: 0,
           shipping_category: Spree::ShippingCategory.find_by(name: 'Default') || Spree::ShippingCategory.first
         }
       end
@@ -36,7 +35,16 @@ module SolidusImporter
           product.shipping_category = options[:shipping_category]
 
           # Apply the row attributes
-          product.name = @data['Title'] unless @data['Title'].nil?
+          fields = {
+            name: 'Title',
+            description: 'Body (HTML)',
+            sku: 'Variant SKU',
+            price: 'Variant Price',
+            cost_price: 'Cost per item'
+          }
+          fields.each_pair do |k, v|
+            product.send("#{k}=", @data[v]) unless @data[v].blank?
+          end
 
           # Save the product
           product.save!

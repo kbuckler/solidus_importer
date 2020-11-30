@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'down'
+require 'fileutils'
+
 module SolidusImporter
   module Processors
     class ProductImages < Base
@@ -13,13 +16,16 @@ module SolidusImporter
 
       private
 
-      def prepare_image
-        attachment = URI.open(@data['Image Src'])
-        Spree::Image.new(attachment: attachment, alt: @data['Alt Text'])
-      end
-
       def process_images(product)
-        product.images << prepare_image
+        tempfile = Down.download(@data['Image Src'])
+        attachment_path = "./#{tempfile.original_filename}"
+        FileUtils.mv(tempfile.path, attachment_path)
+
+        File.open(attachment_path) do |attachment|
+          product.images << Spree::Image.new(attachment: attachment, alt: @data['Alt Text'])
+        end
+
+        File.delete(attachment_path)
       end
 
       def product_image?
